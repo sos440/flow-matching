@@ -3,7 +3,6 @@ from torch.utils.data import TensorDataset, DataLoader
 
 # Other tools
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
@@ -22,8 +21,8 @@ n_points = 10_000
 
 data = np.concatenate(
     [
-        2.0 + 0.5 * np.random.randn(n_points // 2),
-        -2.0 + 1.0 * np.random.randn(n_points // 2),
+        2.0 + 0.5 * np.random.rand(n_points // 2),
+        -2.0 + 1.0 * np.random.rand(n_points // 2),
     ]
 ).reshape(-1, 1)
 
@@ -41,9 +40,9 @@ class GMMPath(RectifiedPath):
 
     def __init__(
         self,
-        m: NDArray[np.float_],
-        s: NDArray[np.float_],
-        p: NDArray[np.float_],
+        m: NDArray[np.float64],
+        s: NDArray[np.float64],
+        p: NDArray[np.float64],
         sig_min: float = 0.001,
         eps=1e-5,
     ) -> None:
@@ -69,7 +68,7 @@ v_t = VectorField(net)
 
 # configure optimizer
 optimizer = torch.optim.Adam(v_t.parameters(), lr=1e-3)
-n_epochs = 200
+n_epochs = 1000
 
 losses = np.zeros((n_epochs))
 
@@ -124,7 +123,7 @@ def to_path_code(path):
 
 
 # Sampling
-n_samples = 200
+n_samples = 500
 n_steps = 200
 t_steps = torch.linspace(0, 1, n_steps, device=device)
 
@@ -145,7 +144,7 @@ paths = x_t_numpy.transpose(1, 0, 2)
 fig, ax = plt.subplots(figsize=(10, 6))
 
 for path in paths:
-    ax.plot(path[:, 0], path[:, 1], color="blue", alpha=0.2)
+    ax.plot(path[:, 0], path[:, 1], color="blue", alpha=0.1)
 
 plt.savefig("outputs/1d_sample_gen_trajectory.png", dpi=300)
 plt.close()
