@@ -41,9 +41,9 @@ class GMMPath(RectifiedPath):
 
     def __init__(
         self,
-        m: NDArray[np.float_],
-        s: NDArray[np.float_],
-        p: NDArray[np.float_],
+        m: NDArray[np.float64],
+        s: NDArray[np.float64],
+        p: NDArray[np.float64],
         sig_min: float = 0.001,
         eps=1e-5,
     ) -> None:
