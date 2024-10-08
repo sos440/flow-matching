@@ -88,6 +88,22 @@ def dm_loss(v: VectorField, x_data: Tensor, x_noise: Tensor, T: float = 10.0, N:
     return torch.mean(loss_batch)
 
 
+def fm_loss(v: VectorField, x_data: Tensor, x_noise: Tensor, T: float = 10.0, N: int = 10) -> Tensor:
+    """
+    Compute the flow-matching loss.
+    """
+
+    assert x_data.shape == x_noise.shape, "The data and noise tensors must have the same shape."
+    assert x_data.device == x_noise.device, "The data and noise tensors must be on the same device."
+
+    # Time
+    t = torch.rand(x_data.shape[0], device=x_data.device)[:, None]
+
+    loss_batch = torch.sum((v(t, (1 - t) * x_data + t * x_noise) - (x_noise - x_data)) ** 2, dim=-1)
+
+    return torch.mean(loss_batch)
+
+
 ####################################################################################################
 
 
