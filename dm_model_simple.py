@@ -83,7 +83,7 @@ def dm_loss(v: VectorField, x_data: Tensor, x_noise: Tensor, T: float = 10.0, N:
     z = torch.randn(x_data.shape, device=x_data.device)
 
     loss_batch = (1 - t) * torch.sum(v(t, x_data) ** 2, dim=-1) + t * torch.sum(v(t, x_noise) ** 2, dim=-1)
-    loss_batch += 2 * T * torch.sum((v(t, x_noise + s * z) - v(t, x_data + s * z)) * z, dim=-1)
+    loss_batch += 2 * T * torch.sum((v(t, x_data + s * z) - v(t, x_noise + s * z)) * z, dim=-1)
 
     return torch.mean(loss_batch)
 
