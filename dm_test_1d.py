@@ -5,6 +5,7 @@ from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from typing import Callable
 
 
 ################################################################################
@@ -16,6 +17,8 @@ parser.add_argument("--loss", type=str, default="fm", help="Loss function to use
 parser.add_argument("--points", type=int, default=60000, help="Number of data points")
 parser.add_argument("--epochs", type=int, default=1000, help="Number of epochs")
 parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
+parser.add_argument("--data-dist", type=str, default="uniform", help="Data distribution")
+parser.add_argument("--noise-dist", type=str, default="gaussian", help="Noise distribution")
 
 args = parser.parse_args()
 
@@ -24,15 +27,56 @@ print(f"Device selected: {device}")
 ################################################################################
 
 
-def generate_data(n_points):
+def gen_uniform(n_points: int):
     x = 2 * torch.rand(n_points, 1, device=device) - 1
     return x
 
 
-def generate_noise(n_points):
+def gen_gaussian(n_points: int):
     x = torch.randn(n_points, 1, device=device)
     return x
 
+
+def gen_2_diracs(n_points: int):
+    x = 2.0 * torch.randint(low=0, high=2, size=(n_points, 1), device=device).float() - 1
+    return x
+
+
+def gen_3_diracs(n_points: int):
+    x = torch.randint(low=-1, high=2, size=(n_points, 1), device=device).float()
+    return x
+
+
+def gen_2_gaussians(n_points: int):
+    x = 2 * gen_2_diracs(n_points) + 0.25 * torch.randn(n_points, 1, device=device)
+    return x
+
+
+def gen_3_gaussians(n_points: int):
+    x = 2 * gen_3_diracs(n_points) + 0.25 * torch.randn(n_points, 1, device=device)
+    return x
+
+
+dict_dist: dict[str, Callable[[int], Tensor]] = {
+    "uniform": gen_uniform,
+    "gaussian": gen_gaussian,
+    "2-diracs": gen_2_diracs,
+    "3-diracs": gen_3_diracs,
+    "2-gaussians": gen_2_gaussians,
+    "3-gaussians": gen_3_gaussians,
+}
+
+
+def choose_dist(name_dist: str) -> Callable[[int], Tensor]:
+    if name_dist in dict_dist.keys():
+        return dict_dist[name_dist]
+    else:
+        raise ValueError(f"{name_dist} is not a valid distribution name!")
+
+
+# Choose the distributions
+generate_data = choose_dist(args.data_dist)
+generate_noise = choose_dist(args.noise_dist)
 
 # Generate the dataset
 n_points = args.points
@@ -50,8 +94,13 @@ v_t = VectorField(net)
 loss_fn = None
 if args.loss == "fm":
     loss_fn = fm_loss
+    print("Flow-matching loss has been selected")
 elif args.loss == "dm":
     loss_fn = dm_loss
+    print("Direct-matching loss has been selected")
+elif args.loss == "mixed":
+    loss_fn = mixed_loss
+    print("Mixed loss has been selected")
 else:
     raise ValueError(f"Unknown loss function: {args.loss}")
 
@@ -67,7 +116,7 @@ for epoch in tqdm(range(n_epochs), ncols=88):
 
         # Epoch step
         optimizer.zero_grad()
-        loss = fm_loss(v_t, x_data, x_noise)
+        loss = loss_fn(v_t, x_data, x_noise)
         loss.backward()
         optimizer.step()
 
@@ -111,18 +160,18 @@ test_dist()
 
 ################################################################################
 
-from matplotlib.collections import PathCollection
-from matplotlib.path import Path
+# from matplotlib.collections import PathCollection
+# from matplotlib.path import Path
 
 
-def to_path_code(path):
-    assert len(path) >= 2
-    codes = [Path.MOVETO] + [Path.LINETO] * (len(path) - 1)
-    return codes
+# def to_path_code(path):
+#     assert len(path) >= 2
+#     codes = [Path.MOVETO] + [Path.LINETO] * (len(path) - 1)
+#     return codes
 
 
 # Generate trajectories using the learned vector field
-def test_trajectories(n_samples=500, n_steps=200):
+def test_trajectories(n_samples=10000, n_steps=200):
     t = torch.linspace(0, 1, n_steps, device=device)
 
     x_t = torch.zeros(n_steps, n_samples, 1, device=device)
@@ -134,16 +183,14 @@ def test_trajectories(n_samples=500, n_steps=200):
     # Processing
     x_t_numpy = np.zeros((n_steps, n_samples, 2))
     for i in range(n_steps):
-        x_t_numpy[i] = np.hstack([t[i].item() * np.ones(n_samples, 1), x_t[i].cpu().numpy()])
+        x_t_numpy[i] = np.hstack([t[i].item() * np.ones((n_samples, 1)), x_t[i].cpu().numpy()])
 
-    paths = x_t_numpy.transpose(1, 0, 2)
+    x = x_t_numpy.reshape(-1, 2)
 
     # Drawing
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    for path in paths:
-        ax.plot(path[:, 0], path[:, 1], color="blue", alpha=0.1)
-
+    ax.hist2d(x[:, 0], x[:, 1], bins=(200, 200), density=True)
     plt.savefig("outputs/1d_sample_gen_trajectory.png", dpi=300)
     plt.close()
 
