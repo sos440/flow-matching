@@ -6,8 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from numpy.typing import NDArray
-
 
 ################################################################################
 
@@ -17,11 +15,11 @@ print(f"Device selected: {device}")
 ################################################################################
 
 # Generate the dataset
-n_points = 10_000
+n_points = 600_000
 x_data_0 = 2 * torch.rand(n_points, 1, device=device) - 1
 
 # Prepare the dataloader
-batch_size = 2048
+batch_size = 1024
 dataset = TensorDataset(x_data_0)
 dataloader = DataLoader(dataset, batch_size=batch_size)
 
@@ -30,8 +28,8 @@ net = Net(1, 1, [512] * 5, 10).to(device)
 v_t = VectorField(net)
 
 # configure optimizer
-optimizer = torch.optim.Adam(v_t.parameters(), lr=1e-3)
-n_epochs = 1000
+optimizer = torch.optim.Adam(v_t.parameters(), lr=1e-4)
+n_epochs = 100
 
 losses = np.zeros((n_epochs))
 for epoch in tqdm(range(n_epochs), ncols=88):
@@ -45,8 +43,12 @@ for epoch in tqdm(range(n_epochs), ncols=88):
         loss.backward()
         optimizer.step()
 
-        # Record loss
-        losses[epoch] = loss.item()
+        losses[epoch] += x_data.shape[0] * loss.item()
+
+    # Record loss
+    losses[epoch] /= n_points
+
+    tqdm.write(f"Epoch {epoch + 1}/{n_epochs}, Loss: {losses[epoch]:.4f}")
 
 # Display the learning curve
 plt.plot(np.arange(len(losses)), losses)
@@ -67,8 +69,8 @@ x_data_0 = x_data_0.cpu().numpy()
 x_data_pred = x_data_pred.cpu().numpy()
 
 # Display the generated data
-plt.hist(x_data_0, bins=128, alpha=0.5, label="Data")
-plt.hist(x_data_pred, bins=128, alpha=0.5, label="Generated")
+plt.hist(x_data_0, bins=128, alpha=0.5, label="Data", density=True)
+plt.hist(x_data_pred, bins=128, alpha=0.5, label="Generated", density=True)
 plt.tight_layout()
 plt.legend()
 plt.savefig("outputs/1d_sample_comparison.png", dpi=300)

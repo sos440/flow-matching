@@ -69,7 +69,7 @@ class VectorField(nn.Module):
 ####################################################################################################
 
 
-def dm_loss(v: VectorField, x_data: Tensor, x_noise: Tensor, T: float = 100) -> Tensor:
+def dm_loss(v: VectorField, x_data: Tensor, x_noise: Tensor, T: float = 10.0, N: int = 10) -> Tensor:
     """
     Compute the direct-matching loss.
     """
@@ -79,15 +79,11 @@ def dm_loss(v: VectorField, x_data: Tensor, x_noise: Tensor, T: float = 100) -> 
 
     # Time
     t = torch.rand(x_data.shape[0], device=x_data.device)[:, None]
-
-    # Integration variable
     s = T * torch.rand(x_data.shape[0], device=x_data.device)[:, None]
-
-    # Noise
     z = torch.randn(x_data.shape, device=x_data.device)
 
     loss_batch = (1 - t) * torch.sum(v(t, x_data) ** 2, dim=-1) + t * torch.sum(v(t, x_noise) ** 2, dim=-1)
-    loss_batch = loss_batch + 2 * torch.sum(T * (v(t, x_noise + s * z) - v(t, x_data + s * z)) * z, dim=-1)
+    loss_batch += 2 * T * torch.sum((v(t, x_noise + s * z) - v(t, x_data + s * z)) * z, dim=-1)
 
     return torch.mean(loss_batch)
 
