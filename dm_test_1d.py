@@ -29,7 +29,7 @@ v_t = VectorField(net)
 
 # configure optimizer
 optimizer = torch.optim.Adam(v_t.parameters(), lr=1e-4)
-n_epochs = 100
+n_epochs = 1000
 
 losses = np.zeros((n_epochs))
 for epoch in tqdm(range(n_epochs), ncols=88):
