@@ -15,7 +15,7 @@ print(f"Device selected: {device}")
 ################################################################################
 
 # Generate the dataset
-n_points = 600_000
+n_points = 600_00
 x_data_0 = 2 * torch.rand(n_points, 1, device=device) - 1
 
 # Prepare the dataloader
