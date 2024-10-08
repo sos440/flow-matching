@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser(description="1D Flow Matching")
 parser.add_argument("--loss", type=str, default="fm", help="Loss function to use")
 parser.add_argument("--points", type=int, default=60000, help="Number of data points")
 parser.add_argument("--epochs", type=int, default=1000, help="Number of epochs")
+parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
 
 args = parser.parse_args()
 
@@ -55,7 +56,7 @@ else:
     raise ValueError(f"Unknown loss function: {args.loss}")
 
 # configure optimizer
-optimizer = torch.optim.Adam(v_t.parameters(), lr=1e-4)
+optimizer = torch.optim.Adam(v_t.parameters(), lr=args.lr)
 n_epochs = args.epochs
 
 losses = np.zeros((n_epochs))
