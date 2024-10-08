@@ -148,4 +148,4 @@ def test_trajectories(n_samples=500, n_steps=200):
     plt.close()
 
 
-test_dist()
+test_trajectories()
